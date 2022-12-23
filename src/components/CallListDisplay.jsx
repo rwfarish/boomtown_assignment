@@ -1,5 +1,6 @@
-import { Box, FormControl, InputLabel, MenuItem, Select, Stack, Typography } from "@mui/material";
+import {Button, Box, FormControl, InputLabel, MenuItem, Select, Stack, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
+import DisplayTable from "./DisplayTable";
 
 const SearchParams = () => {
 
@@ -12,6 +13,8 @@ const SearchParams = () => {
     const [endpoint, updateEndpoint] = useState("");
     const [error, setError] = useState("");
     const [repoData, setRepoData] = useState({});
+    const [displays, setDisplays] = useState([]);
+
 
   
    useEffect(() => {
@@ -39,7 +42,38 @@ const SearchParams = () => {
       loadRepo();
   
     }, []);
-  
+
+    async function requestDisplays(e) {
+        e.preventDefault();
+        setError("");
+    
+        // call our various api endpoints
+      
+        const res = await fetch(
+          `https://api.github.com/orgs/boomtownroi/${endpoint}`
+        ).then(async (response) => {
+          if (response.ok) {
+            const data = await response.json();
+    
+            //set data response according to endpoint response object
+            setDisplays(data);
+    
+            //perform repos verification comparing actual number to listed number
+            if (endpoint === "repos" && data.length !== repoData.public_repos) {
+                setError("Repo count does not match public repo count")
+            }
+            else if (endpoint === "repos" && data.length === repoData.public_repos) {
+              console.log("Repos good!")
+            }
+            
+          } else {
+            // return error message if response is not in successful range of 200-299
+            setError("Network request returns a " + response.status + " status response");
+            setDisplays([]); 
+            console.log(response.status);
+          }
+        });
+      }
     
   
     return (
@@ -61,10 +95,26 @@ const SearchParams = () => {
               ))}
             </Select>
           </FormControl>
+          <Button variant="contained" onClick={requestDisplays} sx={{width:"100px", margin:"20px"}}>Submit</Button>
+
          
         {error !== "" && <Typography variant="h6">{error}</Typography>}
-       
-            </Stack>
+
+        
+
+        {displays.map((display) => (
+
+            //passing response object properties to display in table view
+        <DisplayTable
+          name={display.name}
+          id={display.id}
+          type={display.type}
+          login={display.login}
+          message={display.message}
+          key={display.id}
+        />
+      ))}
+       </Stack>
         </Box>
         </>
     );
